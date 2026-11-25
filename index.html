@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b4f8a">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Campo EEQ</title>
+<link rel="stylesheet" href="lib/leaflet.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header id="top">
+  <div class="brand"><b>Campo EEQ</b><small id="brandSub">Fiscalización · Quito</small></div>
+  <div class="chips"><div id="offChip" class="chip warn" hidden>Sin internet: …</div><div id="gpsChip" class="chip" hidden>GPS…</div></div>
+</header>
+
+<main>
+  <!-- MENÚ DE MÓDULOS -->
+  <section id="viewMenu" hidden>
+    <h3>¿Qué vas a fiscalizar?</h3>
+    <button class="modBtn" data-mod="lect"><b>Lecturas</b><span id="cLect" class="muted small"></span></button>
+    <button class="modBtn" data-mod="notif"><b>Notificaciones</b><span id="cNotif" class="muted small"></span></button>
+    <button class="modBtn" data-mod="corte"><b>Cortes y reconexiones</b><span id="cCorte" class="muted small"></span></button>
+    <div class="card">
+      <div id="riesgoTodo"></div>
+      <button id="btnBackupAll" class="btn">Respaldar todo (los 3 módulos)</button>
+      <div id="storInfo" class="muted small"></div>
+      <button id="btnInstall" class="btn" hidden>Instalar app en el teléfono</button>
+      <button id="btnDiag" class="btn">Revisar si funciona sin internet</button>
+      <div id="diagOut" class="small"></div>
+      <button id="btnLogout" class="btn small">Cerrar sesión</button>
+    </div>
+  </section>
+
+  <!-- MÓDULO -->
+  <section id="viewHome" hidden>
+    <div class="modBar"><button id="btnMenu" class="btn small">← Módulos</button><b id="modName"></b></div>
+    <nav class="tabs">
+      <button data-tab="ordenes" class="on">Órdenes</button>
+      <button data-tab="mapa">Mapa</button>
+      <button data-tab="reporte">Reporte</button>
+    </nav>
+
+    <div id="tabOrdenes">
+      <div id="csvBox" class="card"></div>
+      <div id="listBox" hidden>
+        <input id="q" type="search" placeholder="Buscar orden, medidor o cuenta" autocomplete="off">
+        <div class="filters">
+          <button data-f="todas" class="on">Todas</button>
+          <button data-f="pend">Pendientes</button>
+          <button data-f="curso">En curso</button>
+          <button data-f="ok">Atendidas</button>
+        </div>
+        <div id="list"></div>
+      </div>
+    </div>
+
+    <div id="tabMapa" hidden>
+      <div class="mapBar">
+        <span id="mapInfo" class="muted small"></span>
+        <label class="small"><input type="checkbox" id="mapAtend"> Ver atendidas</label>
+      </div>
+      <div id="mapBox"></div>
+      <div class="mapBtns">
+        <button id="mapMe" class="btn small">📍 Mi ubicación</button>
+        <button id="mapAll" class="btn small">Ver todas</button>
+      </div>
+      <p id="mapNota" class="muted small"></p>
+    </div>
+
+    <div id="tabReporte" hidden>
+      <div class="card">
+        <label class="lbl">Fecha de trabajo</label>
+        <input id="repFecha" type="date">
+        <div id="repResumen" class="muted"></div>
+        <button id="btnZip" class="btn primary">Descargar reporte del día (ZIP + Excel)</button>
+        <button id="btnXls" class="btn">Solo Excel del día</button>
+        <p class="muted small">El ZIP trae el Excel de actividades y una carpeta por medidor con sus fotos (con marca de agua y coordenadas).</p>
+      </div>
+      <div class="card">
+        <div id="riesgo"></div>
+        <button id="btnBackup" class="btn">Respaldar este módulo (todas las fechas)</button>
+      </div>
+      <div class="card">
+        <label class="lbl">Fotos de muestra del sistema Grid</label>
+        <div id="muestraInfo" class="muted small"></div>
+        <button id="btnMuestras" class="btn small">Cargar fotos del Grid (ZIP)</button>
+      </div>
+      <div class="card">
+        <button id="btnDelCsv" class="btn danger">Eliminar CSV anterior…</button>
+        <p class="muted small">Para cuando termine el trabajo de este módulo. Nunca borra lo que no esté descargado sin avisarte.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ORDEN -->
+  <section id="viewOrden" hidden>
+    <div class="card ordHead">
+      <div class="big">Orden: <b id="oNum"></b></div>
+      <div class="big">Medidor: <b id="oMed"></b></div>
+      <div id="oExtra" class="muted"></div>
+    </div>
+    <div class="card">
+      <div class="lbl">Ejecutado por</div>
+      <div id="ejecutorTxt" class="big"></div>
+      <div class="lbl" style="margin-top:8px">Coordenada de la orden</div>
+      <div id="coordTxt"></div>
+    </div>
+
+    <div id="gridBox">
+      <h3>Fotos en el sistema Grid <span class="muted small">(para revisar)</span></h3>
+      <div id="muestras" class="grid"></div>
+    </div>
+
+    <h3>Fotografías de fiscalización <span id="fotoCount" class="muted"></span></h3>
+    <div id="grid" class="grid"></div>
+
+    <h3>Observación <span class="muted small">(opcional)</span></h3>
+    <textarea id="obs" rows="2" class="mat" style="width:100%" placeholder="Anota algo si hace falta"></textarea>
+
+    <div id="faltan" class="alertBox" hidden></div>
+    <button id="btnSave" class="btn primary big">Guardar orden</button>
+    <button id="btnDiscard" class="btn danger small">Descartar esta orden</button>
+  </section>
+</main>
+
+<div id="camOv" hidden>
+  <video id="camVideo" playsinline muted autoplay></video>
+  <div id="camLabel"></div><div id="camGps"></div>
+  <div class="camBar"><button id="camCancel" class="cb">Cancelar</button><button id="camGal" class="cb">🖼 Galería</button><button id="camShot" aria-label="Tomar foto"></button><button id="camNative" class="cb">Cámara del<br>teléfono</button></div>
+</div>
+<div id="viewer" hidden><img id="viewerImg" alt=""><button id="viewerX" class="btn">Cerrar</button></div>
+<div id="modal" hidden><div class="mbox"><h4 id="mTitle"></h4><div id="mBody"></div><div id="mBtns"></div></div></div>
+<div id="busy" hidden><div><span id="busyTxt">Procesando…</span><button id="busyX" class="btn small" hidden>Cerrar este mensaje</button></div></div>
+
+<div id="login" hidden>
+  <form id="loginForm" class="mbox" autocomplete="off">
+    <h3 style="margin-top:0">Campo EEQ</h3>
+    <label class="lbl" for="lgU">Usuario</label>
+    <input id="lgU" type="text" autocapitalize="none" autocorrect="off" spellcheck="false" class="mat" style="width:100%">
+    <label class="lbl" for="lgP" style="margin-top:10px">Contraseña</label>
+    <input id="lgP" type="password" class="mat" style="width:100%">
+    <div id="lgErr" class="alertBox" hidden>Usuario o contraseña incorrectos.</div>
+    <button class="btn primary big" type="submit">Entrar</button>
+  </form>
+</div>
+
+<input id="cam" type="file" accept="image/*" capture="environment" hidden>
+<input id="gal" type="file" accept="image/*" hidden>
+<input id="csvIn" type="file" accept=".csv,.xlsx,text/csv" hidden>
+<input id="zipIn" type="file" accept=".zip,application/zip" hidden>
+
+<script src="lib/jszip.min.js"></script>
+<script src="lib/leaflet.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
